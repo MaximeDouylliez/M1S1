@@ -1,0 +1,71 @@
+Le dpll ne fonctionne pas, les codes sources de dpll ne sont pas fournis.
+
+
+Les differents test de sat3 et sat sont lancés via la commande make + la commande
+
+make userdefined :resoudre avec tout les certificats possibles  (fichier texte simpleinput utilisé)
+
+make randomcertif :resoudre avec un certificat généra aléatoirement  (fichier texte simpleinput utilisé)
+
+make allcertif :resoudre avec un certificat initialisé grace au fichier texte simpleinput   (fichier texte simpleinput utilisé)
+
+make satreduction :reduit une formule sat en sat3 et la resoud avec une certificat initialisé grace au fichier texte reductioninput ( fichier texte reductioninput  utilisé)
+
+
+
+
+
+
+
+
+
+
+La suite de ce readme explique comment modifier les valeurs dans les fichiers texte pour creer les formules de son choix.
+
+
+pour la negation : 0 laisse le litteral dans sa valeur de base, 1 active la negation
+
+
+chaque ligne dans le ficher d'input correspond à une information excepté les information de clause qui sont toute regroupé sur une ligne et la valeur des variable .
+
+
+
+
+
+
+
+pour simpleinput
+nombre de variable differente utilisées
+negation de la formule
+nombre de clause de la formule
+
+Puis une ligne par clause avec sur chaque ligne l'assignation de forcément trois litteraux ( sat3 pour le moment):
+negation de la clause
+
+indice de la variable utilisé dans la clause
+negation du litteral
+
+La derniere ligne permet de créer le certificat:  la premiere valeur est la valeur de x0 , la seconde de x1 ...
+
+
+
+
+
+
+
+
+
+
+pour reduction input
+
+nombre de variable differente utilisées
+negation de la formule
+nombre de clause de la formule
+
+
+puis une ligne par clause avec pour chaque ligne
+negation de la clause
+nombre de litteraux de la clause
+puis l'indice de la variable d'un literral suivis la negation ou non du litteral, pour chaque littéral
+
+La derniere ligne permet de créer le certificat:  la premiere valeur est la valeur de x0 , la seconde de x1 ...

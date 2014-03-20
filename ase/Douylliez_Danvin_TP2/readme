@@ -1,0 +1,18 @@
+Danvin Florian
+Douylliez Maxime
+
+
+
+
+
+
+L'ensemble des fichiers demandés on été créé.
+
+Lorsqu'un throw est executé, le contexte enregistré lors du début de try est rechargé dans le registre, la valeur "X" du "return X" dans throw est retournée là où serait envoyé normalement la valeur "Y" du "return y" dans try.
+
+On peut comprendre que dans try, si f(arg) provoque un throw, les appels écrits dans try entre l'appel de f(arg) et le return de try ne sont pas appelés.
+
+throw prend un argument r qui, après le rechargement de contexte ne contient plus sa valeur d'origine. On peut comprendre qu'après le chargement du contexte dans les registres; la frame de "throw" disparaît, et l'espace reservé pour les variables de throw est libéré.
+
+
+De plus, dans throw, si l'on appelle une fonction après avoir chargé le contexte, les adresse ebp et esp de la fonction sont immédiatement inférieures à celle du contexte chargé, donc toute les frames au dessus du contexte chargé sont libérée. Ici , la fonction nouvellement appelé occupe le meme espace que f(arg) précedement.

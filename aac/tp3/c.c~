@@ -1,0 +1,586 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+
+
+
+/*################################################################  Structures  ###################################################################*/
+enum etat_clause{VALIDE,UNKNOW,FALSIFIE};
+enum etat_formule{SATISFIABLE,UNKNOW,INSATISFIABLE};
+
+
+struct litteral{
+  int xindice;
+  int negation;
+};
+
+//clause à trois littéraux
+struct clause{
+  struct litteral l1;
+  struct litteral l2;
+  struct litteral l3;
+  int negation;
+  int is_red;
+  int seq_red;
+};
+
+
+
+//clause avec n litteraux
+struct clauseNLit{
+  struct litteral* litt;
+  int nlit;
+  int negation;
+enum etat_clause;
+};
+
+
+//formule avec n litteraux par clause
+struct formuleNLit{
+  struct clauseNLit* tclause;
+  int nclause;
+  int negation;
+  int nvar;
+enum etat_formule;
+};
+ 
+//formule à trois litteraux
+struct formule{
+  struct clause* tclause;
+  int nclause;
+  int negation;
+  int nvar;
+};
+
+//certificat valide pour n'importe quelle formule
+struct certificat{
+  int * valt;
+};
+static int nb_join_lit_already_created=0;
+static int ind_seq_red=0;
+
+static char* namet;
+/*################################################################ Fonction de creation, d'initialisation de structure   ###################################################################*/
+//permet de créer une structure litteral
+struct litteral new_litteral( int indice, int negation){
+  struct litteral l;
+  l.xindice=indice;
+  l.negation=negation;
+  return l;
+}
+
+
+
+//permet de céer une structure clause
+struct clause new_clause(struct litteral l1,struct litteral l2,struct litteral l3, int negation){
+  struct clause c;
+  c.l1=l1;
+  c.l2=l2;
+  c.l3=l3;
+  c.negation=negation;
+  c.is_red=0;
+  return c;
+}
+//permet de céer une structure clauseNLit
+struct clauseNLit new_clauseNLit(struct litteral* tabl,int nlit, int negation){
+  struct clauseNLit c;
+  int i; 
+  c.litt=tabl;
+  c.nlit=nlit;
+  c.negation=negation;
+  return c;
+}
+
+
+
+//permet de créer une formule par saisie de l'utilisateur
+struct formule new_formule_3sat(){
+  int n,i;
+  int i1,i2,i3,v1,v2,v3,n1,n2,n3,nclause,nformule;
+  struct litteral l1,l2,l3;
+  struct clause c;
+  struct clause* tclause;
+  struct formule f;
+
+  //printf("Donnez le nombre de variable différente utilisee\n");
+  scanf("%d",&f.nvar);
+  namet= malloc(f.nvar);// on reserve l'espace pour nommer les variables
+  for(i=0;i<f.nvar;i++)namet[i]='0'+i;
+  //prtintf("Donnez la valeur de la négation de la formule true:1, false:0\n");
+  scanf("%d",&nformule);
+  f.negation=nformule;
+  //printf("donnez nombre de clause:\n");
+  scanf("%d",&n);
+  f.nclause=n;
+  tclause=malloc(n*sizeof(struct clause));
+  //printf("Donnez chaque indice litteral suivis de la valeur suivi de sa negation, exemple pour trois litteraux sans négation\n\n");
+  for(i=0;i<n;i++){
+    //printf("Donnez la valeur de la négation de la clause true:1, false:0\n");
+    scanf("%d",&nclause);
+    //printf("Donnez les litteraux de la clause %d, svp:\n",i);
+    scanf("%d %d %d %d %d %d",&i1,&n1,&i2,&n2,&i3,&n3);
+    l1=new_litteral(i1,n1);
+    l2=new_litteral(i2,n2);
+    l3=new_litteral(i3,n3);
+    c=new_clause(l1,l2,l3,nclause);
+    tclause[i]=c;
+  }
+  f.tclause=tclause;
+  return f;}
+
+//permet de créer une nouvelle formule sat à partir des saisies de l'utilisateur
+struct formuleNLit new_formule_sat(){
+  int n,i,j,nlit;
+  int indexl,vall,negl,nclause,nformule;
+  struct litteral l1;
+  struct litteral * lt;
+  struct clauseNLit c;
+  struct clauseNLit* tclause;
+  struct formuleNLit f;
+
+  //printf("Donnez le nombre de variable différente utilisee\n");
+  scanf("%d",&f.nvar);
+  namet= malloc(26+f.nvar);// on reserve l'espace pour nommer les variables
+  for(i=0;i<f.nvar;i++)namet[i]='0'+i;
+  //prtintf("Donnez la valeur de la négation de la formule true:1, false:0\n");
+  scanf("%d",&nformule);
+  f.negation=nformule;
+  //printf("donnez nombre de clause:\n");
+  scanf("%d",&n);
+  f.nclause=n;
+
+  f.tclause=malloc(n*sizeof(struct clauseNLit));
+
+  for(i=0;i<n;i++){
+    //printf("Donnez la valeur de la négation de la clause true:1, false:0\n");
+    scanf("%d",&nclause);
+    //printf("Donnez le nombre de litteral de la clause %d, svp:\n",i);
+    scanf("%d",&nlit);
+    lt=malloc(nlit*sizeof(struct litteral));
+    for(j=0;j<nlit;j++){
+      //printf("Donnez l'indice du  litteral %d de la clause %d suivi de la valeur de sa negation, svp:\n",j,i);
+      scanf("%d", &indexl);
+      scanf("%d",&negl);
+      lt[j]=new_litteral(indexl,negl); 
+    }
+    c=new_clauseNLit(lt,nlit,nclause);
+    //printf("clause %d:    nlit:%d, negation:%d\n",i,c.nlit,c.negation);
+    f.tclause[i]=c;
+  }
+  // f.tclause=tclause;
+  return f;}
+
+
+
+/* ##################################################################Fonctions d'affichage  ########################################################################*/
+
+//donne la valeur des variables d'un certificat
+void print_valuation(struct formule f,struct certificat c){
+  int i;
+  printf("valeur des %d variables initialise:\n",f.nvar);
+  for(i=0;i<f.nvar;i++)
+    printf("x%c:%d ",namet[i],c.valt[i]);printf("\n");}
+
+void print_valuation_nl(struct formuleNLit f,struct certificat c){
+  int i;
+  printf("valeur des %d variables initialise:\n",f.nvar);
+  for(i=0;i<f.nvar;i++)
+    printf("x%c:%d ",namet[i],c.valt[i]);printf("\n");}
+
+
+
+
+
+// affiche la formule 3sat passé en parametre
+void aff_formule_3sat(struct formule f){
+  int i;
+  struct clause c;
+
+  printf("\nAffichage de la formule 3sat!\n");
+  !f.negation?:printf("!(");
+  for(i=0;i<f.nclause;i++){
+    c=f.tclause[i];
+    !i>0?:printf(" && ");
+    printf("%c(%cx%c||%cx%c||%cx%c)",c.negation?'!':' ',c.l1.negation?'!':' ',namet[c.l1.xindice],c.l2.negation?'!':' ',namet[c.l2.xindice],c.l3.negation?'!':' ',namet[c.l3.xindice]);
+  }
+  !f.negation?printf("\n"):printf(")\n");
+}
+
+// affiche la formule sat passé en parametre
+void aff_formule_sat(struct formuleNLit f){
+  int i,j,nlit;
+  struct clauseNLit c;
+
+  //printf("nvar:%d nclause:%d negation:%d\n",f.nvar,f.nclause,f.negation);
+
+  printf("\nAffichage de la formule sat! \n");
+  !f.negation?:printf("!(");
+  for(i=0;i<f.nclause;i++){
+    c=f.tclause[i];
+    //printf("clause %d:    nlit:%d, negation:%d\n",i,c.nlit,c.negation);
+    !i>0?:printf(" && ");
+    printf("%c(",c.negation?'!':' ');
+    for(j=0;j<c.nlit;j++){
+      printf("%cx%c",c.litt[j].negation?'!':' ',namet[c.litt[j].xindice]);(j==c.nlit-1)?:printf("||");}
+    printf(")");
+  }
+  !f.negation?printf("\n"):printf(")\n");
+}
+/*####################################################Initiation certificat################################################################"*/
+/*Les deux fonction d'initiation de certificat son identique mais la structure passé en parametre change...*/
+//permet d'initialiser un certificat par saisie de l'utilisateur et affi
+struct certificat init_cert(struct formule f){
+  int i;
+  struct certificat c;
+
+  c.valt=malloc((50+f.nvar)*sizeof(int));//on prend plus de place pour le cas particulier de la reduction sat vers sat3 où des variables de jointures sont utilisées
+  for(i=0;i<f.nvar;i++){
+    //printf("Donnez la valeur de x%d: 0 ou 1\n",i);
+    scanf("%d",&c.valt[i]);
+  }
+  print_valuation(f,c);
+  return c;
+}
+
+//permet d'initier un certificat par saisie de l'utilisateur et l'affiche. Fonction pour les formules sat
+struct certificat init_cert_nl(struct formuleNLit f){
+  int i;
+  struct certificat c;
+  c.valt=malloc((50+f.nvar)*sizeof(int));//on prend plus de place pour le cas particulier de la reduction sat vers sat3 où des variables de jointures sont utilisées
+  for(i=0;i<f.nvar;i++){
+    //printf("Donnez la valeur de x%d: 0 ou 1\n",i);
+    scanf("%d",&c.valt[i]);
+  }
+  print_valuation_nl(f,c);
+  return c;
+}
+/*################################################################ Fonctions de conversion de structure ou d'extraction d'information d'une structure  ###################################################################*/
+// donne la valeur finale d'un litteral, en fonction de sa valeur de base et de la négation de cette valeur
+int lit_val(struct litteral lit,struct certificat c){
+  int base_val;
+  base_val=c.valt[lit.xindice];
+  if(lit.negation)base_val=1-base_val;
+  return base_val;
+}
+
+// permet de transformer une clause a N litteraux en une clause 3-sat, le tableau de retour contient autant de clause que de Litteraux dans la clause d'entrée sauf si le nombre de lit est = ou inf a 3 ( version pas propre)
+struct clause * clauseNLit_to_clause(struct clauseNLit nc,struct formuleNLit* fl){
+  int i;
+  struct clause* c;
+  struct litteral ld;
+  if(nc.nlit==1){c=malloc(sizeof (struct clause));c[0].l1=nc.litt[0];c[0].l2=nc.litt[0];c[0].l3=nc.litt[0];} // si le nombre de litteraux est 1
+  else if(nc.nlit==2){c=malloc(sizeof (struct clause));c[0].l1=c[0].l2=nc.litt[0];c[0].l3=nc.litt[1];} // si le nombre de litteraux est 2
+  else if(nc.nlit==3){c=malloc(sizeof (struct clause));c[0].l1=nc.litt[0];c[0].l2=nc.litt[1];c[0].l3=nc.litt[2];} // si le nombre de litteraux est 3
+  else { // si le nombre de litteraux est plud que 3
+    c=malloc(nc.nlit *sizeof (struct clause));
+    fl->nvar++;
+    c[0].l1=nc.litt[0];// On crée la clause de gauche traitant le premier littéral de la clause
+    c[0].l2=nc.litt[0];
+    ld=new_litteral(fl->nvar-1,0);// on lui donne un indice en fonction du nombre de variable déja crée
+    c[0].l3=ld;
+    namet[fl->nvar-1]='a'+nb_join_lit_already_created;// on lui donne un nom en fonction du nombre de variable déja crée
+    nb_join_lit_already_created++;
+    c[0].is_red=1;
+    c[0].seq_red=ind_seq_red;
+    //  printf("generation d'une clause premiere reussie nvar:%d newlitnb:%d!\n",fl->nvar,nb_join_lit_already_created);
+    for( i=1;i<nc.nlit-1;i++){// les clauses du centre, du second littéral de la clause jusqu'a l'avant dernier
+      ld.negation=1;
+      c[i].l1=ld;
+      c[i].l2=nc.litt[i];
+      fl->nvar++;
+      ld=new_litteral(fl->nvar-1,0);
+      namet[fl->nvar-1]='a'+nb_join_lit_already_created;
+      nb_join_lit_already_created++;
+      c[i].l3=ld;
+      c[i].is_red=1;
+      c[i].seq_red=ind_seq_red;
+      //   printf("generation d'une clause interne reussie nvar:%d newlitnb:%d !\n",fl->nvar,nb_join_lit_already_created);
+    }
+    c[nc.nlit-1].l3=nc.litt[nc.nlit-1];// la clause de fin , traitant le dernier litteral de la clause
+    c[nc.nlit-1].l2=nc.litt[nc.nlit-1];
+   ld.negation=1;
+    c[nc.nlit-1].l1=ld;
+    c[nc.nlit-1].is_red=1;
+    c[nc.nlit-1].seq_red=ind_seq_red;
+    //    printf("generation d'une clause derniere reussie nvar:%d newlitnb:%d !\n\n\n",fl->nvar,nb_join_lit_already_created);
+
+  }
+  ind_seq_red++;
+  return c;
+}
+
+// transforme une formule sat en formule 3sat.
+struct formule formule_sat_to_formule_3sat(struct formuleNLit fnl){
+  struct formule f;
+  int i_fnl,j;
+  int cpt_clause;
+  cpt_clause= 0;
+  struct clauseNLit clausenl;
+  struct clause* bufferc;
+  struct clause c;
+  f.tclause=malloc((fnl.nclause)*sizeof (struct clause));
+  bufferc=malloc(20*sizeof (struct clause));
+
+  for (i_fnl=0;i_fnl<fnl.nclause;i_fnl++){// pour chaque clause
+    clausenl=fnl.tclause[i_fnl];
+    if(clausenl.nlit<=3){bufferc=clauseNLit_to_clause(clausenl,&fnl);f.tclause[cpt_clause]=bufferc[0];cpt_clause++;}// si nombre de litteraux de la clausse <3, conversion direct
+    else {bufferc=clauseNLit_to_clause(clausenl,&fnl);for(j=0;j<clausenl.nlit;j++){f.tclause[cpt_clause]=bufferc[j];cpt_clause++;}// sinon une clause se reduit en plusieur clause
+}
+    // printf(" clause %d traite.... \n",i_fnl+1);
+  }
+  f.nclause=cpt_clause;
+  f.negation=fnl.negation;
+  f.nvar=fnl.nvar;
+  return f;
+} 
+
+
+
+/*################################################################  fonction de résolution de SAT/SAT3  ###################################################################*/
+// calcule de la satisfiabilite d'un certificat appliqué à une formule
+int sat3(struct formule f,struct certificat cert){
+  int sat,i,index_join_var,is_new_red_seq,backup;
+  struct clause c,temp;
+  sat=1;
+  is_new_red_seq=1;
+  backup=index_join_var;
+  index_join_var=f.nvar-nb_join_lit_already_created;
+  //  printf(" misc info.... f.nvar:%d nbjoinlitalreadyceated:%d indexjoin var:%d\n",f.nvar,nb_join_lit_already_created,index_join_var);
+printf("\n\n l'algo va traiter %d clause\n\n",f.nclause);
+  for(i=0;i<f.nclause && sat==1;i++){
+    c=f.tclause[i];
+    if(i!=f.nclause-1)
+      temp=f.tclause[i+1];
+
+
+
+    if (c.is_red)// si la clause traité est issue d'une réduction
+      {	
+	//	printf("clause %d (reded) is crunched: reduced sequence=%d\n",i,c.seq_red);
+	if(is_new_red_seq)// la premiere clause d'une séquence de clause réduite
+	  {
+	    if(!(lit_val(c.l1,cert)||lit_val(c.l2,cert)))
+	      {
+		cert.valt[index_join_var]=1; //printf("upclause %d, right joint var(indice: %d) is   set to 1\n",i,index_join_var);
+		//	printf("aditional dysplay of joint var of index %d, value:%d\n", index_join_var, cert.valt[index_join_var]);
+	      }
+	    else
+	      {
+		//	printf("upclause %d right joint var (indice: %d) is set to 0\n",i,index_join_var);
+		cert.valt[index_join_var]=0;
+	      }
+	    is_new_red_seq=0;
+
+	  }
+
+	else if ((i==f.nclause-1)|| (!temp.is_red) ||(temp.seq_red!=c.seq_red))// le cas ou c'est la derniere clause d'une séquence de clause réduite
+	  {
+	    //   printf("clause %d is red and seq_red is %d, clause %d is not like that ! left var val:%d\n",i,c.seq_red,i+1,lit_val(c.l1,cert));
+	    is_new_red_seq=1;index_join_var++;
+	  }
+
+	else{index_join_var++;// les clauses d'une séquence de clause réduite à partir de la seconde jusqu'a l'avant derniere
+	  if(!(lit_val(c.l1,cert)||lit_val(c.l2,cert)))
+	    {
+	      cert.valt[index_join_var]=1;// printf("downclause %d, left var val:%d   right var(indice: %d) val set to 1\n",i,lit_val(c.l1,cert),index_join_var);
+	    }
+	  else
+	    {
+	      cert.valt[index_join_var]=0;// printf("downclause %d, left var val:%d   right var(indice: %d) val set t 0\n",i,lit_val(c.l1,cert),index_join_var);
+	    }
+	}
+      }
+
+// traitement de la clause, si la formule n'est pas issue d'une réduction, seule cette partie est executé 
+    if(!(lit_val(c.l1,cert)||lit_val(c.l2,cert)||lit_val(c.l3,cert)))
+      { 
+		printf("clause %d is false.....  l1 of indice %d: l2 of indice %d:  l3 of indice %d: Valuation will be printed  \n",i,c.l1.xindice,c.l2.xindice,c.l3.xindice);
+	sat=0; 
+	print_valuation(f,cert);
+      }
+    else
+      {
+	printf("clause %d is true.....  l1 of indice %d: value: %d  l2 of indice %d: value :%d  l3 of indice %d: value: %d   \n",i,c.l1.xindice,lit_val(c.l1,cert),c.l2.xindice,lit_val(c.l3,cert),c.l3.xindice,lit_val(c.l3,cert));
+      }
+    if(c.negation)sat=1-sat;
+  }
+  if(f.negation)sat=1-sat;
+  index_join_var=backup;
+
+  return sat;
+}
+
+
+/*############################################  DPLL#########################################""*/
+struct formuleNLit propager_clause_unitaire(struct formuleNLit fnl){
+
+}
+
+
+
+int dpll(struct formuleNLit fnl){
+fnl=propager_clause_unitaire(fnl);
+if (fnl.etat_formule==INSATISFIABLE )return 0;
+for (int i=0;i<fnl.nclause;i++){c=tclause[i], if (c.etat_clause==FALSIFIE)return 0;}
+fnl=propager_variables_pur(fnl);
+for(i =0, c= tclause[i];i<fnl.nclause,c.etat_clause=VALIDE;i++){if (i==fnl.nclause-1) return 1;}
+fnl=switch_variable(fnl);
+return dpll(fnl);
+}
+
+
+
+/*################################################################  generation de certificat  ###################################################################*/
+//génerateur automatique de certificat pseudo aléatoire
+struct certificat cert_gen(struct formule f){
+  int i;
+  struct certificat c;
+  c.valt=malloc(f.nvar*sizeof(int));
+  for(i=0;i<f.nvar;i++)
+    c.valt[i]=rand()%2;
+  return c;
+}
+
+//permet d'obtenir un certificat a partir d'un entier
+struct certificat certificat_binaire(unsigned n,struct formule f){
+  int i;
+  struct certificat c;
+  c.valt=malloc(f.nvar*sizeof(int));
+  for(i=f.nvar;i>=0;i--){
+    c.valt[i]=(n>>i)&1;}
+  return c;
+}
+
+
+
+
+
+
+/*################################################################  different type de main  ###################################################################*/
+
+
+
+//just for fun
+void loto (struct formule f){
+  int i;
+  printf("Bienvenue, 1000 tentatives !\n");
+  for (i=0;i<1000;i++)
+    printf("RESULTAT:%d\n",sat3(f,cert_gen(f)));
+}
+
+// affiche les résultats de toute les combinaisons possible de certificat pour une formule donnée
+void all_certif_sat3(struct formule f){
+  int i,nb_possibilite;
+  struct certificat c;
+  nb_possibilite=2;
+  for(i=0;i<f.nvar-1;i++)
+    {
+      nb_possibilite=nb_possibilite*2;
+    } 
+
+  for(i=0;i<nb_possibilite;i++)
+    {
+      c=certificat_binaire(i,f);
+      print_valuation(f,c);
+      printf("RESULTAT:%d\n",sat3(f,c));
+      free(c.valt);
+    }
+}
+
+
+void lancer_sat3_user_defined_certificate(){ 
+  struct formule f;
+  struct certificat c; 
+  f=new_formule_3sat();
+  aff_formule_3sat(f);
+  c=init_cert(f);
+
+  printf("RESULTAT:%d\n",sat3(f,c));
+
+  ;}
+
+
+void lancer_sat3_random_certificate(){
+  struct formule f;
+  struct certificat c;
+  f=new_formule_3sat();
+  aff_formule_3sat(f);
+		   
+  loto(f);
+
+  ;}
+
+
+
+
+void lancer_sat3_all_certificate(){ 
+  struct formule f;
+  struct certificat c;
+  f=new_formule_3sat();
+  aff_formule_3sat(f);
+		   
+  all_certif_sat3(f);
+
+  ;}
+
+void lancer_test_sat_to_sat3(){ 
+  struct formuleNLit fnl;
+  struct formule f;
+  struct certificat c;
+  fnl=new_formule_sat();
+  c=init_cert_nl(fnl);
+  aff_formule_sat(fnl);
+  f=formule_sat_to_formule_3sat(fnl);
+ aff_formule_3sat(f);
+		    
+		   
+  printf("RESULTAT:%d\n",sat3(f,c));
+
+  ;}
+
+
+void lancer_test_dpll(){
+ struct formuleNLit fnl;
+ fnl=new_formule_sat();
+dpll(fnl);
+}
+
+
+
+
+
+int main(int arc,char**argv){
+  struct formule f;
+  struct certificat c;
+  // les quatres options ci dessous utilise le fichier texte val pour créer la formule
+  //lancer_sat3_user_defined_certificate();//resoud avec un certificat initialisé grace au fichier texte
+  // lancer_sat3_random_certificate();// resoud avec un certificat généra aléatoirement
+  //lancer_sat3_all_certificate();// resoud avec tout les certificats possibles
+  //lancer_test_sat_to_sat3();   // lancer le programme comme ceci : ./test  <red
+lancer_test_dpll(); // resoud la formule sat : utiliser le fichier dpll pour les input
+  return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

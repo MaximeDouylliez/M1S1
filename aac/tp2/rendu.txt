@@ -1,0 +1,24 @@
++3 ->+1,		-2,		+1;
+
+de gauche a droite
+
+    -1->-0,+1          +2->-1,-1       -1->-0       
+
+
+  	   +1->-0       +1->-0   +1->-0  
+
+
+q2
+au moin une valeur négative.
+n=min (n-1))*(-1)
+
+valeur toute positive
+v(n)=max(v(n-1))+1
+
+q3 2 sec pour(10,7,7,3),5 sec pour(10,7,5,3), plus le carré de chocolat de la mort est au centre, plus à chaque coupe on va devoir traiter de cas, ainsi , 10,7,5,6( carré sur le bord du bas) se traite plus rapidement que 10,7,4,4 (au centre).
+
+(n+m)! appels.
+
+
+q4
+Q5

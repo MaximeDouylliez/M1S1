@@ -1,0 +1,20 @@
++3 ->+1,		-2,		+1;
+
+de gauche a droite
+
+    -1->-0,+1          +2->-1,-1       -1->-0       
+
+
+  	   +1->-0       +1->-0   +1->-0  
+
+
+q2
+au moin une valeur négative.
+n=min (n-1))*(-1)
+
+valeur toute positive
+v(n)=max(v(n-1))+1
+
+q3 2 sec pour(10,7,7,3),5 sec pour(10,7,5,3)
+q4
+Q5

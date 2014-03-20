@@ -1,0 +1,2 @@
+plot 'test.txt' using 1:2 title 'comparaisons' with lines
+

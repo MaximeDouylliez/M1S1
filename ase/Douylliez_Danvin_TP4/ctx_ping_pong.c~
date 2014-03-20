@@ -1,0 +1,69 @@
+#include "init_ctx.h"
+#include "hw.h"
+#include <unistd.h>
+
+
+
+void start_schedule(){
+  printf("Activation du start_schedule\n");
+  setup_irq(TIMER_IRQ,yield);
+  start_hw();  
+  yield();
+} 
+
+int main(int argc, char *argv[])
+{
+
+  printf("-------------- Demarrage --------------"); 
+  void f_ping(void *arg);
+  void f_pong(void *arg);
+  void f_pang(void *arg);
+  sem_init(&sem1,100);
+  printf("semaphore créé\n");
+
+  create_ctx(16384,f_pang,NULL);
+  printf("1st Create Terminé !\n");
+  create_ctx(16384,f_ping,NULL);
+  printf("2nd Create Terminé !\n");
+  create_ctx(16384,f_pong,NULL);
+  printf("3rd Create Terminé !\n");	
+	
+  start_schedule();
+	
+  exit(EXIT_SUCCESS);
+}
+
+void f_ping(void *args)
+{	
+  while(1) {
+    sem_down(&sem1);
+
+//    sem_down(&sem1);
+    printf("A");
+    printf("B");
+    printf("C");
+  }
+}
+
+void f_pong(void *args)
+{
+  while(1){
+    printf("1\n");      
+    printf("2\n");    
+    printf("3\n");
+    sem_up(&sem1);  
+   
+  }
+}
+
+void f_pang(void *args){
+
+  while(1){
+
+    printf("ALPHA\n");
+    printf("EPSILON\n");
+    printf("THETA\n");
+    sem_up(&sem1);
+sleep(1);
+}
+}

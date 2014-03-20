@@ -1,0 +1,4 @@
+test: c.o
+	gcc -o test c.o
+c.o: c.c
+	gcc -c c.c

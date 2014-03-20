@@ -1,0 +1,155 @@
+#include <stdio.h>
+
+
+int choco(int i,int j,int m, int n){
+
+  //  printf("Avant traitement i:%d j:%d m:%d n:%d\n",i,j,m,n);
+  if(i==1 && j==1)
+    return 0;
+ 
+  
+  
+  int tl,th,bcl,bch,res,fres,commu;
+  commu=0;
+ 
+  
+  // printf("for1:  %d:   %d   %d   %d  \n",i,j,m,n); 
+  for(th=(j),bch=(n);th>1 && bch>0;th--,bch--){
+
+    res=choco(i,(th-1),m,(bch-1));
+    if (res==0)
+      return 1;
+    
+
+    if(commu==0){
+      fres=res;
+      commu==1;}
+
+    
+    if(fres%2==0){// si les resultats jusque maintenant sont perdant
+      if(res%2==1)// si res est gagnant
+	fres=res;
+      else if(fres<res)//si rez et perdant et plus grand que frez
+	fres=res;
+    }
+    else if( res%2==1 && res<fres)//modif res%2==0
+      fres=res;
+  }
+  
+  
+   for(tl=i,bcl=m;tl>1 && bcl>0;tl--,bcl--){
+    res=choco(tl-1,j,bcl-1,n);
+ if (res==0)
+      return 1;
+    
+ if(commu==0){
+      fres=res;
+      commu==1;}
+    if(fres%2==0){// si les resultats jusque maintenant sont perdant
+      if(res%2==1)// si res est gagnant
+	fres=res;
+      else if(fres<res)//si rez et perdant et plus grand que frez
+	fres=res;
+    }
+    else if( res%2==1 && res<fres)//modif res%2==0
+      fres=res;
+  }
+  
+  
+  for(th=j;th>n+1;th--){
+    res=choco(i,(th-1),m,n);
+     if (res==0)
+      return 1;
+    
+ if(commu==0){
+      fres=res;
+      commu==1;}
+    if(fres%2==0){
+      if(res%2==1)
+	fres=res;
+      else if(fres<res)
+	fres=res;
+    }
+    else if( res%2==0 && res<fres)
+      fres=res;
+  }
+  
+  
+  for(tl=i;tl>m+1;tl--){
+    res=choco(tl-1,j,m,n);
+   if (res==0)
+      return 1;
+    
+ if(commu==0){
+      fres=res;
+      commu==1;}
+    if(fres%2==0){// si les resultats jusque maintenant sont perdant
+      if(res%2==1)// si res est gagnant
+	fres=res;
+      else if(fres<res)//si rez et perdant et plus grand que frez
+	fres=res;
+    }
+    else if( res%2==1 && res<fres)//modif res%2==0
+      fres=res;
+    
+  
+  }
+  //  printf("i:%d j:%d m:%d n:%d  longueur:%d\n",i,j,m,n,fres);
+    
+    return fres+1;
+
+  
+}
+
+
+int trans (int val){
+  int i,j,m,n;
+  i=j=m=n=0;
+
+  while(val>0)
+    {
+      if(val>0)
+	{
+	  i++;
+	  val--;
+	}
+      if(val>0)
+	{
+	  m++;
+	  val--;
+	}
+      if(val>0)
+	{
+	  j++;
+	  val--;
+	}
+      if(val>0)
+	{
+	  n++;
+	  val--;
+	}
+    }
+
+  i++;
+  j++;
+
+  printf("i:%d j:%d m:%d n:%d\n",i,j,m,n);
+  return 0;
+}
+
+  
+int main(int argc,char* argv[]){
+    
+    
+   int  res;
+    //res=choco(10,7,5,3);
+  
+ 
+   res=trans(atoi(argv[1]));
+  printf("Plus cour chemin=:%d\n",res);
+  
+  return 0;
+  
+
+
+}

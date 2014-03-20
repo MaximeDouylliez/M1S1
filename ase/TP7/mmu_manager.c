@@ -1,0 +1,28 @@
+#include
+
+
+
+struct tlb_entry_e tlbe;
+
+static int ppage_of_vaddr(int process ,unsigned vaddr){
+
+if(vaddr<virtual_memory || virtual_memory +VM_SIZE-1<vaddr)
+return -1;
+vpage=(vaddr>>12)&0xFFF;
+if(vadr<1 || vaddr>(n/2)-1)
+return -1;
+if(processus==1) ppage=vpage+n/2+1
+if(processus==0) ppage=vpage+1
+return ppage;}
+
+static void mmu_handler(){
+struct tlb_entry_s tlb;
+vaddr==in(MMU_FAULT_ADDR);
+ppage=ppage_of_vaddr(current_context,vaddr);
+if(ppage==-1){printf("C'est pas bon!");exit(0);}
+tlb.vpage=(vaddr>>12)&0xFFF;
+tlb.ppage=ppage;
+tlb.acces=7;
+tlb.valid=1;
+_out(TLB_ADD_ENTRY,tlbe);
+}
